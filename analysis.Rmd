@@ -1,0 +1,231 @@
+---
+title: "Data Cleaning and Analysis"
+author: "Miles D. Williams"
+date: "December 11, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+In this file, I load and clean raw AidData data on Chinese financial flows to create a data file for analysis. I merge this with data from the Cline Center's Archer portal on Xinhwua coverage of developing countries.
+
+```{r libraries}
+try(library(tidyverse))
+library(tidytext)
+library(foreach)
+```
+
+```{r}
+# Get aid data
+read_csv("china_aid_data.csv") %>% 
+  filter(recommended_for_research == T) %>%
+  rename(country= recipient_condensed) %>%
+  group_by(country, year) %>%
+  summarize(aid = sum(usd_defl_2014)) -> china_aid
+
+# Controls
+pwt8::pwt8.1 -> penn
+penn %>%
+  select(country, year, rgdpna, pop, emp) %>%
+  right_join(china_aid) -> china_aid
+
+library(devtools)
+install_github("ropengov/rqog")
+library(rqog)
+read_qog(which_data="basic", data_type = "time-series") -> basic_qog
+basic_qog %>%
+  rename(country = cname) %>%
+  select(country, year, icrg_qog) %>%
+  right_join(china_aid) -> china_aid
+```
+
+
+```{r}
+# Get Xinhua data
+read_tsv("12_11_2019 20_17_02.tsv") %>%
+  filter(publisher == "Xinhua General News Service") -> xinhua
+
+# Make year variable
+xinhua %>%
+  mutate(year = str_extract(publication_date, pattern = "[0-9][0-9] ")) %>%
+  mutate(year = paste0("20",year) %>% as.numeric) -> xinhua
+```
+
+
+
+```{r}
+write_csv(china_aid,"china_aid.csv")
+write_csv(xinhua,"xinhua.csv")
+```
+
+```{r}
+foreach(
+  i = unique(china_aid$country),  
+  .combine = 'rbind'
+) %do% {
+  foreach(j = unique(china_aid$year), 
+          .combine = 'rbind') %do% {
+    xinhua %>%
+    filter(year == j) %>%
+    unnest_tokens(country_names, country) %>%
+    .$country_names -> patterns
+  china_aid %>%
+    filter(country == i, year == j) -> country_year
+  str_detect(
+      tolower(country_year$country),
+      pattern = unique(patterns)
+    ) %>%
+    sum(., na.rm=T) -> counts
+  tibble(
+    country = i,
+    year = j,
+    counts = counts
+  )
+        }
+} -> count_data
+summary(count_data)
+table(count_data$counts)
+```
+
+```{r}
+china_aid %>%
+  left_join(count_data, by = c("year","country")) %>%
+  group_by(year) %>%
+  mutate(aid_rank = rank(aid)) -> analysis_data
+ggplot(data = analysis_data) +
+  aes(log(aid_rank), as.numeric(counts>0)) +
+  geom_jitter(width = .05, height = .05, alpha = .5) +
+  geom_smooth(method = "lm")
+```
+
+
+
+```{r}
+library(lmtest)
+library(sandwich)
+lm(log(aid_rank) ~ I(counts>0) + as.factor(year), analysis_data) -> model1
+lm(counts>0 ~ log(aid_rank) + as.factor(year), analysis_data) -> model2
+
+model1 %>%
+  coeftest(., vcov = vcovBS(.)) %>%
+  broom::tidy(.) %>%
+  filter(term == "I(counts > 0)TRUE") %>%
+  mutate(term = "Coverage") %>%
+  dotwhisker::dwplot(dot_args = list(color = "black")) +
+  geom_vline(xintercept = 0) +
+  labs(
+    x = "Estimated Increase in Rank (ln)"
+  ) +
+  theme(
+    axis.title.x = element_text(face = "italic")
+  ) -> p1
+model2 %>%
+  coeftest(., vcov = vcovBS(.)) %>%
+  broom::tidy(.) %>%
+  filter(term == "log(aid_rank)") %>%
+  mutate(term = "Rank (ln)") %>%
+  dotwhisker::dwplot(dot_args = list(color = "black")) +
+  geom_vline(xintercept = 0) +
+  labs(
+    x = "Estimated Increase in Pr(Coverage)"
+  ) +
+  theme(
+    axis.title.x = element_text(face = "italic")
+  ) -> p2
+gridExtra::grid.arrange(p1, p2, ncol = 2, 
+                        top = grid::textGrob(
+                          "A not so telling set of results...",
+                          gp = grid::gpar(fontface = 4, fontsize = 14),
+                          hjust = 1
+                        )) 
+```
+
+```{r}
+analysis_data %>%
+  group_by(country) %>%
+  mutate(count_lag = lag(counts, order_by = year),
+         aid_rank_lag = lag(aid_rank, order_by = year)) %>%
+  ungroup() -> analysis_data
+
+lm(log(aid_rank) ~ I(count_lag>0), analysis_data) -> model3
+lm(counts>0 ~ log(aid_rank_lag), analysis_data) -> model4
+
+lm(log(aid_rank) ~ I(count_lag>0) + as.factor(year), analysis_data) -> model5
+lm(counts>0 ~ log(aid_rank_lag) + as.factor(year), analysis_data) -> model6
+
+lm(log(aid_rank) ~ I(count_lag>0) + log(emp) + log(pop) + log(rgdpna), analysis_data) -> model7
+lm(counts>0 ~ log(aid_rank_lag) + log(emp) + log(pop) + log(rgdpna), analysis_data) -> model8
+
+lm(log(aid_rank) ~ I(count_lag>0) + log(emp) + log(pop) + log(rgdpna) + as.factor(year), analysis_data) -> model9
+lm(counts>0 ~ log(aid_rank_lag) + log(emp) + log(pop) + log(rgdpna) + as.factor(year), analysis_data) -> model10
+
+rbind(model3 %>%
+  coeftest(., vcov = vcovBS(.)) %>%
+  broom::tidy(.) %>%
+  filter(term == "I(count_lag > 0)TRUE") %>%
+  mutate(term = "Coverage\n(prior year)", model = "FE: no; Controls: no"),
+  model5 %>%
+  coeftest(., vcov = vcovBS(.)) %>%
+  broom::tidy(.) %>%
+  filter(term == "I(count_lag > 0)TRUE") %>%
+  mutate(term = "Coverage\n(prior year)", model = "FE: yes; Controls: no"),
+  model7 %>%
+  coeftest(., vcov = vcovBS(.)) %>%
+  broom::tidy(.) %>%
+  filter(term == "I(count_lag > 0)TRUE") %>%
+  mutate(term = "Coverage\n(prior year)", model = "FE: no; Controls: yes"),
+  model9 %>%
+  coeftest(., vcov = vcovBS(.)) %>%
+  broom::tidy(.) %>%
+  filter(term == "I(count_lag > 0)TRUE") %>%
+  mutate(term = "Coverage\n(prior year)", model = "FE: yes; Controls: yes")) %>%
+  dotwhisker::dwplot() +
+  geom_vline(xintercept = 0) +
+  labs(
+    x = "Estimated Increase in Rank (ln)"
+  ) +
+  theme(
+    axis.title.x = element_text(face = "italic"),
+    legend.position = "top"
+  ) -> p3
+rbind(model4 %>%
+  coeftest(., vcov = vcovBS(.)) %>%
+  broom::tidy(.) %>%
+  filter(term == "log(aid_rank_lag)") %>%
+  mutate(term = "Rank (ln)\n(prior year)", model = "FE: no; Controls: no"),
+  model6 %>%
+  coeftest(., vcov = vcovBS(.)) %>%
+  broom::tidy(.) %>%
+  filter(term == "log(aid_rank_lag)") %>%
+  mutate(term = "Rank (ln)\n(prior year)", model = "FE: yes; Controls: no"),
+  model8 %>%
+  coeftest(., vcov = vcovBS(.)) %>%
+  broom::tidy(.) %>%
+  filter(term == "log(aid_rank_lag)") %>%
+  mutate(term = "Rank (ln)\n(prior year)", model = "FE: no; Controls: yes"),
+  model10 %>%
+  coeftest(., vcov = vcovBS(.)) %>%
+  broom::tidy(.) %>%
+  filter(term == "log(aid_rank_lag)") %>%
+  mutate(term = "Rank (ln)\n(prior year)", model = "FE: yes; Controls: yes")) %>%
+  dotwhisker::dwplot() +
+  geom_vline(xintercept = 0) +
+  labs(
+    x = "Estimated Increase in Pr(Coverage)"
+  ) +
+  theme(
+    axis.title.x = element_text(face = "italic"),
+    legend.position = "top"
+  ) -> p4
+gridExtra::grid.arrange(p3, p4, ncol = 2, 
+                        top = grid::textGrob(
+                          "A more interesting set of results...",
+                          gp = grid::gpar(fontface = 4, fontsize = 14),
+                          hjust = 1
+                        )) 
+```
+
+
+
