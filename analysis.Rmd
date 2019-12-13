@@ -31,14 +31,20 @@ penn %>%
   select(country, year, rgdpna, pop, emp) %>%
   right_join(china_aid) -> china_aid
 
-library(devtools)
-install_github("ropengov/rqog")
+#library(devtools)
+#install_github("ropengov/rqog")
 library(rqog)
 read_qog(which_data="basic", data_type = "time-series") -> basic_qog
 basic_qog %>%
   rename(country = cname) %>%
-  select(country, year, icrg_qog) %>%
+  select(country, year, icrg_qog, vdem_polyarchy) %>%
   right_join(china_aid) -> china_aid
+
+china_aid %>%
+  mutate(
+    rgdpna = rgdpna/pop,
+    emp = emp/pop
+  ) -> china_aid
 ```
 
 
@@ -54,12 +60,6 @@ xinhua %>%
 ```
 
 
-
-```{r}
-write_csv(china_aid,"china_aid.csv")
-write_csv(xinhua,"xinhua.csv")
-```
-
 ```{r}
 foreach(
   i = unique(china_aid$country),  
@@ -67,7 +67,7 @@ foreach(
 ) %do% {
   foreach(j = unique(china_aid$year), 
           .combine = 'rbind') %do% {
-    xinhua %>%
+  xinhua %>%
     filter(year == j) %>%
     unnest_tokens(country_names, country) %>%
     .$country_names -> patterns
@@ -85,8 +85,6 @@ foreach(
   )
         }
 } -> count_data
-summary(count_data)
-table(count_data$counts)
 ```
 
 ```{r}
@@ -109,7 +107,7 @@ lm(log(aid_rank) ~ I(counts>0) + as.factor(year), analysis_data) -> model1
 lm(counts>0 ~ log(aid_rank) + as.factor(year), analysis_data) -> model2
 
 model1 %>%
-  coeftest(., vcov = vcovBS(.)) %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
   broom::tidy(.) %>%
   filter(term == "I(counts > 0)TRUE") %>%
   mutate(term = "Coverage") %>%
@@ -122,7 +120,7 @@ model1 %>%
     axis.title.x = element_text(face = "italic")
   ) -> p1
 model2 %>%
-  coeftest(., vcov = vcovBS(.)) %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
   broom::tidy(.) %>%
   filter(term == "log(aid_rank)") %>%
   mutate(term = "Rank (ln)") %>%
@@ -136,10 +134,12 @@ model2 %>%
   ) -> p2
 gridExtra::grid.arrange(p1, p2, ncol = 2, 
                         top = grid::textGrob(
-                          "A not so telling set of results...",
+                          "Contemporaneous coverage and aid allocation",
                           gp = grid::gpar(fontface = 4, fontsize = 14),
-                          hjust = 1
-                        )) 
+                          hjust = .5
+                        )) -> plot_1
+ggsave(plot_1, filename = "plot_1.png", 
+       units = "in", height = 3, width = 8)
 ```
 
 ```{r}
@@ -155,29 +155,31 @@ lm(counts>0 ~ log(aid_rank_lag), analysis_data) -> model4
 lm(log(aid_rank) ~ I(count_lag>0) + as.factor(year), analysis_data) -> model5
 lm(counts>0 ~ log(aid_rank_lag) + as.factor(year), analysis_data) -> model6
 
-lm(log(aid_rank) ~ I(count_lag>0) + log(emp) + log(pop) + log(rgdpna), analysis_data) -> model7
-lm(counts>0 ~ log(aid_rank_lag) + log(emp) + log(pop) + log(rgdpna), analysis_data) -> model8
+lm(log(aid_rank) ~ I(count_lag>0) + log(emp) + log(pop) + log(rgdpna) + vdem_polyarchy, analysis_data) -> model7
+lm(counts>0 ~ log(aid_rank_lag) + log(emp) + log(pop) + log(rgdpna) + vdem_polyarchy, analysis_data) -> model8
 
-lm(log(aid_rank) ~ I(count_lag>0) + log(emp) + log(pop) + log(rgdpna) + as.factor(year), analysis_data) -> model9
-lm(counts>0 ~ log(aid_rank_lag) + log(emp) + log(pop) + log(rgdpna) + as.factor(year), analysis_data) -> model10
+lm(log(aid_rank) ~ I(count_lag>0) + log(emp) + log(pop) + log(rgdpna) + vdem_polyarchy + 
+     as.factor(year), analysis_data) -> model9
+lm(counts>0 ~ log(aid_rank_lag) + log(emp) + log(pop) + log(rgdpna) + vdem_polyarchy + 
+     as.factor(year), analysis_data) -> model10
 
 rbind(model3 %>%
-  coeftest(., vcov = vcovBS(.)) %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
   broom::tidy(.) %>%
   filter(term == "I(count_lag > 0)TRUE") %>%
   mutate(term = "Coverage\n(prior year)", model = "FE: no; Controls: no"),
   model5 %>%
-  coeftest(., vcov = vcovBS(.)) %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
   broom::tidy(.) %>%
   filter(term == "I(count_lag > 0)TRUE") %>%
   mutate(term = "Coverage\n(prior year)", model = "FE: yes; Controls: no"),
   model7 %>%
-  coeftest(., vcov = vcovBS(.)) %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
   broom::tidy(.) %>%
   filter(term == "I(count_lag > 0)TRUE") %>%
   mutate(term = "Coverage\n(prior year)", model = "FE: no; Controls: yes"),
   model9 %>%
-  coeftest(., vcov = vcovBS(.)) %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
   broom::tidy(.) %>%
   filter(term == "I(count_lag > 0)TRUE") %>%
   mutate(term = "Coverage\n(prior year)", model = "FE: yes; Controls: yes")) %>%
@@ -188,25 +190,27 @@ rbind(model3 %>%
   ) +
   theme(
     axis.title.x = element_text(face = "italic"),
-    legend.position = "top"
+    legend.position = c(.25,.2),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 5)
   ) -> p3
 rbind(model4 %>%
-  coeftest(., vcov = vcovBS(.)) %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
   broom::tidy(.) %>%
   filter(term == "log(aid_rank_lag)") %>%
   mutate(term = "Rank (ln)\n(prior year)", model = "FE: no; Controls: no"),
   model6 %>%
-  coeftest(., vcov = vcovBS(.)) %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
   broom::tidy(.) %>%
   filter(term == "log(aid_rank_lag)") %>%
   mutate(term = "Rank (ln)\n(prior year)", model = "FE: yes; Controls: no"),
   model8 %>%
-  coeftest(., vcov = vcovBS(.)) %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
   broom::tidy(.) %>%
   filter(term == "log(aid_rank_lag)") %>%
   mutate(term = "Rank (ln)\n(prior year)", model = "FE: no; Controls: yes"),
   model10 %>%
-  coeftest(., vcov = vcovBS(.)) %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
   broom::tidy(.) %>%
   filter(term == "log(aid_rank_lag)") %>%
   mutate(term = "Rank (ln)\n(prior year)", model = "FE: yes; Controls: yes")) %>%
@@ -217,15 +221,246 @@ rbind(model4 %>%
   ) +
   theme(
     axis.title.x = element_text(face = "italic"),
-    legend.position = "top"
+    legend.position = "none"
   ) -> p4
 gridExtra::grid.arrange(p3, p4, ncol = 2, 
                         top = grid::textGrob(
-                          "A more interesting set of results...",
+                          "Estimates with lagged predictors",
                           gp = grid::gpar(fontface = 4, fontsize = 14),
-                          hjust = 1
-                        )) 
+                          hjust = .5
+                        )) -> plot_2
+ggsave(plot_2, filename = "plot_2.png",
+       units = "in", height = 4, width = 8)
 ```
 
 
+```{r}
+library(stargazer)
+```
 
+```{r}
+list(
+    sqrt(diag(vcovHC(model3, "HC2"))),
+    sqrt(diag(vcovHC(model4, "HC2"))),
+    sqrt(diag(vcovHC(model5, "HC2"))),
+    sqrt(diag(vcovHC(model6, "HC2"))),
+    sqrt(diag(vcovHC(model7, "HC2"))),
+    sqrt(diag(vcovHC(model8, "HC2"))),
+    sqrt(diag(vcovHC(model9, "HC2"))),
+    sqrt(diag(vcovHC(model10, "HC2")))
+  ) -> ses
+```
+
+```{r}
+stargazer(
+  header = F,
+  title = "OLS Coefficients for Chinese Aid and Xinhua Coverage of Recipients",
+  model3, model4, model5, model6, model7, model8, model9, model10,
+  se = ses,
+  dep.var.caption = "Outcome Variable",
+  dep.var.labels = rep(c("Rank Aid (ln)", "Pr(Coverage)"), len = 8),
+  column.sep.width = "0pt",
+  keep = c(1:3, 16:20),
+  covariate.labels = c(
+    "Coverage lagged",
+    "Rank Aid lagged (ln)",
+    "*Controls*",
+    "Employment Rate (ln)",
+    "Population (ln)",
+    "Income (ln)",
+    "V-Dem"
+  ),
+  add.lines = list(
+    c("Year FE", "No", "No", "Yes", "Yes", "No", "No", "Yes", "Yes")
+  ),
+  out = "reg_table1.tex"
+) 
+```
+
+```{r}
+xinhua %>%
+  unnest_tokens(country_name, country) %>%
+  group_by(country_name, year) %>%
+  summarize_if(is.numeric, mean) %>%
+  arrange(-mf_moralitygeneral) %>%
+  select(country_name, year, mf_moralitygeneral) %>%
+  rename(country = country_name) -> morality
+analysis_data %>%
+  mutate(country = tolower(country)) %>%
+  left_join(morality, by = c("country","year")) -> analysis_data
+ggplot(data = analysis_data) +
+  aes(log(aid_rank), log(mf_moralitygeneral + 1)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+
+```{r}
+lm(log(aid_rank) ~ mf_moralitygeneral + as.factor(year), analysis_data) -> model1
+lm(mf_moralitygeneral ~ log(aid_rank) + as.factor(year), analysis_data) -> model2
+
+model1 %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
+  broom::tidy(.) %>%
+  filter(term == "mf_moralitygeneral") %>%
+  mutate(term = "Coverage Sentiment") %>%
+  dotwhisker::dwplot(dot_args = list(color = "black")) +
+  geom_vline(xintercept = 0) +
+  labs(
+    x = "Estimated Increase in Rank (ln)"
+  ) +
+  theme(
+    axis.title.x = element_text(face = "italic")
+  ) -> p1
+model2 %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
+  broom::tidy(.) %>%
+  filter(term == "log(aid_rank)") %>%
+  mutate(term = "Rank (ln)") %>%
+  dotwhisker::dwplot(dot_args = list(color = "black")) +
+  geom_vline(xintercept = 0) +
+  labs(
+    x = "Estimated Increase in Virtuous Sentiment"
+  ) +
+  theme(
+    axis.title.x = element_text(face = "italic")
+  ) -> p2
+gridExtra::grid.arrange(p1, p2, ncol = 2, 
+                        top = grid::textGrob(
+                          "Contemporaneous sentiment of coverage and aid allocation",
+                          gp = grid::gpar(fontface = 4, fontsize = 14),
+                          hjust = .5
+                        )) -> plot_3
+ggsave(plot_3, filename = "plot_3.png", 
+       units = "in", height = 3, width = 8)
+```
+
+```{r}
+analysis_data %>%
+  group_by(country) %>%
+  mutate(sent_lag = lag(mf_moralitygeneral, order_by = year)) %>%
+  ungroup() -> analysis_data
+
+lm(log(aid_rank) ~ sent_lag, analysis_data) -> model3
+lm(sent_lag ~ log(aid_rank_lag), analysis_data) -> model4
+
+lm(log(aid_rank) ~ sent_lag + as.factor(year), analysis_data) -> model5
+lm(sent_lag ~ log(aid_rank_lag) + as.factor(year), analysis_data) -> model6
+
+lm(log(aid_rank) ~ sent_lag + log(emp) + log(pop) + log(rgdpna) + vdem_polyarchy, analysis_data) -> model7
+lm(sent_lag ~ log(aid_rank_lag) + log(emp) + log(pop) + log(rgdpna) + vdem_polyarchy, analysis_data) -> model8
+
+lm(log(aid_rank) ~ sent_lag + log(emp) + log(pop) + log(rgdpna) + vdem_polyarchy + 
+     as.factor(year), analysis_data) -> model9
+lm(sent_lag ~ log(aid_rank_lag) + log(emp) + log(pop) + log(rgdpna) + vdem_polyarchy + 
+     as.factor(year), analysis_data) -> model10
+
+rbind(model3 %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
+  broom::tidy(.) %>%
+  filter(term == "sent_lag") %>%
+  mutate(term = "Virtue\n(prior year)", model = "FE: no; Controls: no"),
+  model5 %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
+  broom::tidy(.) %>%
+  filter(term == "sent_lag") %>%
+  mutate(term = "Virtue\n(prior year)", model = "FE: yes; Controls: no"),
+  model7 %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
+  broom::tidy(.) %>%
+  filter(term == "sent_lag") %>%
+  mutate(term = "Virtue\n(prior year)", model = "FE: no; Controls: yes"),
+  model9 %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
+  broom::tidy(.) %>%
+  filter(term == "sent_lag") %>%
+  mutate(term = "Virtue\n(prior year)", model = "FE: yes; Controls: yes")) %>%
+  dotwhisker::dwplot() +
+  geom_vline(xintercept = 0) +
+  labs(
+    x = "Estimated Increase in Rank (ln)"
+  ) +
+  theme(
+    axis.title.x = element_text(face = "italic"),
+    legend.position = c(.25,.175),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 5)
+  ) -> p3
+rbind(model4 %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
+  broom::tidy(.) %>%
+  filter(term == "log(aid_rank_lag)") %>%
+  mutate(term = "Rank (ln)\n(prior year)", model = "FE: no; Controls: no"),
+  model6 %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
+  broom::tidy(.) %>%
+  filter(term == "log(aid_rank_lag)") %>%
+  mutate(term = "Rank (ln)\n(prior year)", model = "FE: yes; Controls: no"),
+  model8 %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
+  broom::tidy(.) %>%
+  filter(term == "log(aid_rank_lag)") %>%
+  mutate(term = "Rank (ln)\n(prior year)", model = "FE: no; Controls: yes"),
+  model10 %>%
+  coeftest(., vcov = vcovHC(., "HC2")) %>%
+  broom::tidy(.) %>%
+  filter(term == "log(aid_rank_lag)") %>%
+  mutate(term = "Rank (ln)\n(prior year)", model = "FE: yes; Controls: yes")) %>%
+  dotwhisker::dwplot() +
+  geom_vline(xintercept = 0) +
+  labs(
+    x = "Estimated Increase in Virtuous Sentiment"
+  ) +
+  theme(
+    axis.title.x = element_text(face = "italic"),
+    legend.position = "none"
+  ) -> p4
+gridExtra::grid.arrange(p3, p4, ncol = 2, 
+                        top = grid::textGrob(
+                          "Estimates with lagged predictors",
+                          gp = grid::gpar(fontface = 4, fontsize = 14),
+                          hjust = .5
+                        )) -> plot_4
+ggsave(plot_4, filename = "plot_4.png",
+       units = "in", height = 4, width = 8)
+```
+
+
+```{r}
+list(
+    sqrt(diag(vcovHC(model3, "HC2"))),
+    sqrt(diag(vcovHC(model4, "HC2"))),
+    sqrt(diag(vcovHC(model5, "HC2"))),
+    sqrt(diag(vcovHC(model6, "HC2"))),
+    sqrt(diag(vcovHC(model7, "HC2"))),
+    sqrt(diag(vcovHC(model8, "HC2"))),
+    sqrt(diag(vcovHC(model9, "HC2"))),
+    sqrt(diag(vcovHC(model10, "HC2")))
+  ) -> ses
+```
+
+```{r}
+stargazer(
+  header = F,
+  title = "OLS Coefficients for Chinese Aid and Sentiment of Xinhua Coverage of Recipients",
+  model3, model4, model5, model6, model7, model8, model9, model10,
+  se = ses,
+  dep.var.caption = "Outcome Variable",
+  dep.var.labels = rep(c("Rank Aid (ln)", "Pr(Coverage)"), len = 8),
+  column.sep.width = "0pt",
+  keep = c(1:3, 16:20),
+  covariate.labels = c(
+    "Virtuous Sentiment lagged",
+    "Rank Aid lagged (ln)",
+    "*Controls*",
+    "Employment Rate (ln)",
+    "Population (ln)",
+    "Income (ln)",
+    "V-Dem"
+  ),
+  add.lines = list(
+    c("Year FE", "No", "No", "Yes", "Yes", "No", "No", "Yes", "Yes")
+  ),
+  out = "reg_table2.tex"
+) 
+```

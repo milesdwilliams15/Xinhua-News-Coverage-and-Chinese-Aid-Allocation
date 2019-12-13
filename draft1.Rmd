@@ -1,0 +1,155 @@
+---
+title: "Xinhua Coverage and Chinese Foreign Aid Allocations"
+subtitle: Miles D. Williams^[University of Illinois, Urbana-Champaign (milesdw2@illinois.edu)]
+date: "`r format(Sys.time(), '%d %B %Y')`"
+output:
+  pdf_document:
+    number_sections: yes
+  html_document: default
+  word_document: default
+geometry: margin=1in
+header-includes:
+- \usepackage{setspace}
+- \doublespacing
+- \setlength\parindent{24pt}
+- \setlength\parskip{1pt}
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \fancyhead[RE]{Williams}
+- \fancyhead[RO]{Williams}
+- \fancyhead[LE]{Xinhua Coverage}
+- \fancyhead[LO]{Xinhua Coverage}
+- \usepackage{rotating}
+fontsize: 12pt
+abstract: Somethign abstract.
+---
+
+# Introduction
+Scholars Rioux and Van Belle (2005) are among a growing number of scholars wading into the still largely unexplored territory that lies at the intersection of domestic political communication and foreign policy. The authors argue that non-state societal actors such as news media play a significant role in shaping a country’s foreign policy by raising the salience of issues in proportion to the extent of news coverage these issues receive. Focusing on the issue of foreign aid allocation, the authors specifically contend that news coverage of individual impoverished countries increases the “domestic political imperative” to prioritize foreign aid to these countries vis-à-vis countries that receive less media attention. In support of this expectation, Rioux and Van Belle find a significant positive association between frequency of country mentions in *Le Monde* (a prominent news media source in France) and French bilateral aid allocations. Van Belle and Hook (2000) find similar results in the U.S. context, while Potter and Van Belle (2009) find a positive correlation between news coverage of natural disasters and disaster aid from Japan. Taken together, these studies support the view that news media play a significant role in shaping foreign policy outcomes and in shaping foreign aid allocations in particular. But how well does this finding translate to a non-democratic context? China is a rising star in the world of development cooperation. It is also an authoritarian polity with a tightly controlled media environment. The Chinese case provides an opportunity to assess whether the link between media coverage and foreign aid allocation found in democratic donors exists in authoritarian donors as well and, if such a pattern exists, whether news coverage drives “domestic political imperative” or is driven by top-down foreign policy objectives.
+
+This study therefore asks two questions: (1) is there a significant positive association between coverage of impoverished countries in Chinese news media and bilateral Chinese aid flows, and (2) if such a correlation exists, in which direction does the causal arrow point? While the first question should be easy enough to answer, the second will prove a challenge. One can make the reasonable case that news coverage of foreign affairs in a democratic polity has a significant effect on foreign policy, but the influence of news media (especially of major news outlets) in an authoritarian context is likely limited. Even more, the foreign policy objectives of ruling elites may drive much of the news media’s content. If so, one imagines that what coverage of foreign affairs does appear in the news is meant to instill support among the public for existing policies. Even more interesting for the Chinese case, prominent news providers such as *Xinhua* have multilingual versions which are often targeted toward a foreign audience; not a domestic one. Thus, Chinese news media may more frequently cover issues in countries that receive foreign aid from China to promote, not only domestic, but also foreign audience approval of the state’s development cooperation initiatives. The broader implication of this insight is that in authoritarian regimes, rather than the media playing an agenda-setting role in shaping foreign policy as Rioux and Van Belle (2005) contend, the state instead plays an agenda-setting role in news coverage.
+
+To estimate the association between news coverage and aid allocation in the Chinese context, and to further tease out whether the latter affects the former (or vice versa) I adopt the following research strategy. First, using the Archer Data Sleuth Portal developed by the Cline Center at the University of Illinois at Urbana-Champaign, I obtain metadata on yearly country mentions in the English version of *Xinhua* (China’s official state-run media and the largest and most influential news provider in the People’s Republic of China), which I will merge with AidData’s Global Chinese Official Finance Dataset (2000-2014). Using this data, I will estimate the association between yearly coverage of foreign countries and yearly receipt of bilateral aid from China. 
+
+Second, to gain some insight into whether news media influence China’s bilateral aid allocations or, as I suggest above, China’s aid allocations influence news coverage, I propose two strategies. First I will use the time-series dimension of the data to assess the temporal correlation between bilateral aid allocations and aid recipient coverage in *Xinhua*. If coverage of a country in one year is followed by a significant increase in aid allocated to that country in the following year, this would support the idea that media has agenda-setting influence on Chinese aid policy. Conversely, if aid allocation is followed by a significant increase in the probability of media coverage, this would support the idea that the state policy shapes the agenda of news media. To ensure the robustness of these results, I include year fixed effects to control for unobserved yearly shocks to China's aid policy and news coverage and a set of covariates that may be correlated both with aid allocations and with news coverage. Estimates are obtained via OLS with robust standard errors.
+
+For the second strategy, I leverage metadata provided by Archer on the moral sentiment of *Xinhua* articles that mention aid recipients. This data is based on the Moral Foundations Dictionary which is used to assign moral sentiment to textual data. Five dimensions included in Archer are: (1) authority, (2) fairness, (3) harm, (4) ingroup, and (5) purity. Each dimension is scored by its degree of viciousness or virtuousness, and these scores are then aggregated to form an overall score for moral sentiment. Under the assumption that negative sentiment is associated with coverage of developing country problems, I expect that more negative sentiment in articles that mention aid recipients will be consistent with the domestic political imperative view of the role of media in shaping foreign aid policy. Conversely, under the assumption that positive moral sentiment is associated with moralizing justifications for aid allocation, more positive sentiment should indicate positive framing of China’s development policy (plausibly at the behest of ruling elites). Though far from conclusive, positive versus negative framing of aid recipients should hint at the direction of the causal arrow linking media coverage of aid recipients to Chinese aid allocations. As with the above, I estimate models with OLS and include year indicators and a set of relevant control variables.
+	
+The analysis ultimately supports the top-down perspective linking media and foreign policy in China. I find a positive association between coverage of developing countries and receipt of Chinese aid; however, analysis that adjusts for confounding variables and uses lagged versions of the covariates of interest indicates that Chinese aid allocations have stronger influence on *Xinhua* coverage than vice versa. Further, I find that positive sentiment has a stronger impact on future aid flows than aid flows do on sentiment in *Xinhua*. This finding may suggest that elites push a positive message about the benefits of development cooperation prior to implementing aid allocation.
+	
+This study’s findings contribute to the growing literature on the role of media in foreign policy, and in particular this study’s focus on China offers a new perspective on the link between news coverage and aid policy in this as yet unexplored authoritarian context. This study lends support to Rioux and Van Belle’s claim that “the role of news media should be part of any comprehensive model of foreign aid and foreign policy” (2005, 482). But even more, this study’s findings add to the above claim that regime type also should be incorporated into any comprehensive model for such a model to be considered truly comprehensive. The nature of the association between media coverage of aid recipients and Chinese aid flows is consistent with top-down influence on whether and how the media covers aid recipients. The implications of this finding are unknown, but at the very least it seems that ruling elites want to frame their development cooperation policy in a particular way to both their own citizens and foreign audiences alike. The import of donor regime type will only increase as China expands its aid program and as other non-democratic donors such as Russia and the United Arab Emirates expand their aid programs as well. As a recent report by the Overseas Development Institute finds, these new donor countries allocate aid in ways that differ markedly from long-standing donors like the United States and France (Gulrajani and Swiss 2017). A thorough assessment of the determinants of these differences will require peering into the black box of domestic politics and the communication environments that serve as the nerve endings of these countries’ political institutions.
+
+
+# Literature Review
+
+# Theory and Hypotheses
+
+# Data
+
+# Analysis
+
+![OLS coefficient estimates with HC2 robust 95% confidence intervals.](plot_1.png)
+
+![OLS coefficient estimates with HC2 robust 95% confidence intervals.](plot_2.png)
+
+![OLS coefficient estimates with HC2 robust 95% confidence intervals.](plot_3.png)
+
+![OLS coefficient estimates with HC2 robust 95% confidence intervals.](plot_4.png)
+
+# Conclusion
+
+
+# Appendix
+
+\begin{sidewaystable}[!htbp] \centering 
+  \caption{OLS Coefficients for Chinese Aid and Xinhua Coverage of Recipients} 
+  \footnotesize
+  \label{} 
+\begin{tabular}{@{\extracolsep{0pt}}lcccccccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{8}{c}{Outcome Variable} \\ 
+\cline{2-9} 
+\\[-1.8ex] & Rank (ln) & Coverage & Rank (ln) & Coverage & Rank(ln) & Coverage & Rank (ln) & Coverage \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6) & (7) & (8)\\ 
+\hline \\[-1.8ex] 
+ Coverage lagged & 0.217$^{***}$ &  & 0.246$^{***}$ &  & 0.097 &  & 0.137 &  \\ 
+  & (0.057) &  & (0.057) &  & (0.092) &  & (0.096) &  \\ 
+  & & & & & & & & \\ 
+ Rank Aid lagged (ln) &  & 0.077$^{***}$ &  & 0.087$^{***}$ &  & 0.064$^{*}$ &  & 0.063$^{*}$ \\ 
+  &  & (0.017) &  & (0.017) &  & (0.033) &  & (0.033) \\ 
+  & & & & & & & & \\ 
+ \textbf{Controls} &  &  &  &  &  &  &  &  \\ 
+  \hline \\ 
+  & & & & & & & & \\ 
+ Employment Rate (ln) &  &  &  &  & 0.577$^{**}$ & 0.275$^{**}$ & 0.569$^{**}$ & 0.243$^{**}$ \\ 
+  &  &  &  &  & (0.226) & (0.110) & (0.241) & (0.107) \\ 
+  & & & & & & & & \\ 
+ Population (ln) &  &  &  &  & 0.058$^{*}$ & 0.086$^{***}$ & 0.046 & 0.084$^{***}$ \\ 
+  &  &  &  &  & (0.030) & (0.015) & (0.031) & (0.015) \\ 
+  & & & & & & & & \\ 
+ Income (ln) &  &  &  &  & $-$0.144$^{***}$ & $-$0.010 & $-$0.179$^{***}$ & $-$0.012 \\ 
+  &  &  &  &  & (0.050) & (0.031) & (0.052) & (0.032) \\ 
+  & & & & & & & & \\ 
+ V-Dem &  &  &  &  & $-$0.060 & $-$0.291$^{**}$ & $-$0.083 & $-$0.292$^{**}$ \\ 
+  &  &  &  &  & (0.170) & (0.128) & (0.171) & (0.119) \\ 
+  & & & & & & & & \\ 
+ Constant & 3.466$^{***}$ & 0.264$^{***}$ & 3.021$^{***}$ & 0.512$^{***}$ & 5.148$^{***}$ & 0.602$^{*}$ & 4.951$^{***}$ & 0.821$^{**}$ \\ 
+  & (0.043) & (0.061) & (0.150) & (0.089) & (0.466) & (0.325) & (0.524) & (0.319) \\ 
+  & & & & & & & & \\ 
+\hline \\[-1.8ex] 
+Year FE & No & No & Yes & Yes & No & No & Yes & Yes \\ 
+Observations & 1,175 & 1,175 & 1,175 & 1,175 & 634 & 634 & 634 & 634 \\ 
+Adjusted R$^{2}$ & 0.013 & 0.020 & 0.026 & 0.058 & 0.062 & 0.132 & 0.094 & 0.162 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{8}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{sidewaystable} 
+
+
+\begin{sidewaystable}[!htbp] \centering 
+  \caption{OLS Coefficients for Chinese Aid and Sentiment of Xinhua Coverage of Recipients} 
+  \footnotesize
+  \label{} 
+\begin{tabular}{@{\extracolsep{0pt}}lcccccccc} 
+\\[-1.8ex]\hline 
+\hline \\[-1.8ex] 
+ & \multicolumn{8}{c}{Outcome Variable} \\ 
+\cline{2-9} 
+\\[-1.8ex] & Rank (ln) & Virtue & Rank (ln) & Virtue & Rank (ln) & Virtue & Rank (ln) & Virtue \\ 
+\\[-1.8ex] & (1) & (2) & (3) & (4) & (5) & (6) & (7) & (8)\\ 
+\hline \\[-1.8ex] 
+ Virtuous Sentiment lagged & 0.070$^{*}$ &  & 0.045 &  & 0.130$^{***}$ &  & 0.055 &  \\ 
+  & (0.036) &  & (0.040) &  & (0.049) &  & (0.050) &  \\ 
+  & & & & & & & & \\ 
+ Rank Aid lagged (ln) &  & 0.132$^{***}$ &  & 0.083$^{**}$ &  & 0.062 &  & 0.016 \\ 
+  &  & (0.040) &  & (0.037) &  & (0.055) &  & (0.058) \\ 
+  & & & & & & & & \\ 
+ \textbf{Controls} &  &  &  &  &  &  &  &  \\ 
+ \hline \\ 
+  & & & & & & & & \\ 
+ Employment Rate (ln) &  &  &  &  & 0.715$^{***}$ & 0.305 & 0.714$^{***}$ & 0.342$^{*}$ \\ 
+  &  &  &  &  & (0.227) & (0.193) & (0.230) & (0.201) \\ 
+  & & & & & & & & \\ 
+ Population (ln) &  &  &  &  & 0.023 & $-$0.034 & 0.020 & $-$0.028 \\ 
+  &  &  &  &  & (0.038) & (0.030) & (0.038) & (0.029) \\ 
+  & & & & & & & & \\ 
+ Income (ln) &  &  &  &  & $-$0.152$^{***}$ & $-$0.082$^{*}$ & $-$0.189$^{***}$ & $-$0.097$^{**}$ \\ 
+  &  &  &  &  & (0.050) & (0.044) & (0.053) & (0.046) \\ 
+  & & & & & & & & \\ 
+ V-Dem &  &  &  &  & 0.164 & 0.261 & 0.092 & 0.187 \\ 
+  &  &  &  &  & (0.222) & (0.255) & (0.223) & (0.235) \\ 
+  & & & & & & & & \\ 
+ Constant & 3.646$^{***}$ & 0.113 & 3.117$^{***}$ & $-$0.075 & 5.329$^{***}$ & 1.221$^{**}$ & 5.061$^{***}$ & 1.166$^{**}$ \\ 
+  & (0.048) & (0.134) & (0.223) & (0.121) & (0.428) & (0.477) & (0.466) & (0.483) \\ 
+  & & & & & & & & \\ 
+\hline \\[-1.8ex] 
+Year FE & No & No & Yes & Yes & No & No & Yes & Yes \\ 
+Observations & 471 & 471 & 471 & 471 & 282 & 282 & 282 & 282 \\ 
+Adjusted R$^{2}$ & 0.004 & 0.014 & 0.029 & 0.075 & 0.077 & 0.015 & 0.138 & 0.070 \\ 
+\hline 
+\hline \\[-1.8ex] 
+\textit{Note:}  & \multicolumn{8}{r}{$^{*}$p$<$0.1; $^{**}$p$<$0.05; $^{***}$p$<$0.01} \\ 
+\end{tabular} 
+\end{sidewaystable} 
